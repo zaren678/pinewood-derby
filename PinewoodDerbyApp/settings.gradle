@@ -1,0 +1,2 @@
+include ':app', ':pinewoodderbybleshared'
+project(":pinewoodderbybleshared").projectDir = file("../PinewoodDerbyBleShared")
