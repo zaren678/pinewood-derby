@@ -17,9 +17,6 @@ import java.lang.Exception
 import java.util.*
 
 
-/**
- * Created by johnanderson on 12/3/17.
- */
 class BleClientService: Service(), Closeable, BleClient {
 
     private val TAG: String? = BleClientService::class.simpleName
@@ -51,19 +48,22 @@ class BleClientService: Service(), Closeable, BleClient {
             Log.e(TAG, "onCharacteristicRead")
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 val bundle = Bundle()
-                bundle.putByteArray(BleResultsConstants.CHARACTERISTIC_DATA, characteristic?.value);
-                mCurrentRequest?.setResult(bundle)
-                mCurrentRequest = null
-                runQueue()
+                bundle.putByteArray(BleResultsConstants.CHARACTERISTIC_DATA, characteristic?.value)
+                setResult(bundle)
             } else {
-                mCurrentRequest?.setError(Exception("Failed to read characteristic"))
-                mCurrentRequest = null
-                runQueue()
+                setError(Exception("Failed to read characteristic"))
             }
         }
 
         override fun onCharacteristicWrite(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
-            Log.e(TAG, "onCharacteristicWrite")
+            Log.e(TAG, "onCharacteristicWrite: $status")
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                val bundle = Bundle()
+                bundle.putByteArray(BleResultsConstants.CHARACTERISTIC_DATA, characteristic?.value)
+                setResult(bundle)
+            } else {
+                setError(Exception("Failed to write characteristic"))
+            }
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
@@ -71,15 +71,10 @@ class BleClientService: Service(), Closeable, BleClient {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 val supportedGattServices = getSupportedGattServices()
                 Log.e(TAG, "Services discovered: " + supportedGattServices?.joinToString())
-                //broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
-                mCurrentRequest?.setResult()
-                mCurrentRequest = null
-                runQueue()
+                setResult()
             } else {
                 Log.w(TAG, "onServicesDiscovered received: " + status)
-                mCurrentRequest?.setError(Exception("Failed to discover services"))
-                mCurrentRequest = null
-                runQueue()
+                setError(Exception("Failed to discover services"))
             }
         }
 
@@ -103,6 +98,24 @@ class BleClientService: Service(), Closeable, BleClient {
                 }
             }
         }
+    }
+
+    private fun setResult() {
+        mCurrentRequest?.setResult()
+        mCurrentRequest = null
+        runQueue()
+    }
+
+    private fun setResult(b: Bundle) {
+        mCurrentRequest?.setResult(b)
+        mCurrentRequest = null
+        runQueue()
+    }
+
+    private fun setError(t:Throwable) {
+        mCurrentRequest?.setError(t)
+        mCurrentRequest = null
+        runQueue()
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -129,18 +142,17 @@ class BleClientService: Service(), Closeable, BleClient {
     }
 
     override fun close() {
+        disconnect()
     }
 
     private fun connectInternal(address: String?): Boolean {
         if (mConnectionState != STATE_DISCONNECTED) {
-            mCurrentRequest?.setError(Exception("Already connected to a device"))
-            mCurrentRequest = null
+            setError(Exception("Already connected to a device"))
             return false
         }
 
         if (mBluetoothAdapter == null || address == null) {
-            mCurrentRequest?.setError(Exception("BluetoothAdapter not initialized or unspecified address."))
-            mCurrentRequest = null
+            setError(Exception("BluetoothAdapter not initialized or unspecified address."))
             return false
         }
 
@@ -152,16 +164,14 @@ class BleClientService: Service(), Closeable, BleClient {
                 mConnectionState = STATE_CONNECTING
                 true
             } else {
-                mCurrentRequest?.setError(Exception("Failed to connect."))
-                mCurrentRequest = null
+                setError(Exception("Failed to connect."))
                 false
             }
         }
 
         val device = mBluetoothAdapter?.getRemoteDevice(address)
         if (device == null) {
-            mCurrentRequest?.setError(Exception("Device not found.  Unable to connect."))
-            mCurrentRequest = null
+            setError(Exception("Device not found.  Unable to connect."))
             return false
         }
         // We want to directly connect to the device, so we are setting the autoConnect
@@ -176,13 +186,24 @@ class BleClientService: Service(), Closeable, BleClient {
 
     private fun readCharacteristicInternal(char: BluetoothGattCharacteristic) {
         if (mConnectionState == STATE_DISCONNECTED) {
-            mCurrentRequest?.setError(Exception("Device not connected"))
-            mCurrentRequest = null
+            setError(Exception("Device not connected"))
             return
         }
 
-        //val characteristic = BluetoothGattCharacteristic(uuid, BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ)
         mBluetoothGatt?.readCharacteristic(char)
+    }
+
+    private fun writeCharacteristicInternal(char: BluetoothGattCharacteristic, data:ByteArray) {
+        if (mConnectionState == STATE_DISCONNECTED) {
+            setError(Exception("Device not connected"))
+            return
+        }
+
+        char.value = data
+        val writeHappened = mBluetoothGatt?.writeCharacteristic(char)
+        if (writeHappened == false) {
+            setError(Exception("Failed to initiate write"))
+        }
     }
 
     override fun getSupportedGattServices(): List<BluetoothGattService>? {
@@ -207,8 +228,19 @@ class BleClientService: Service(), Closeable, BleClient {
         return request.future
     }
 
+    override fun disconnect() {
+        mBluetoothGatt?.disconnect()
+        mBluetoothGatt = null
+    }
+
     override fun readCharacteristic(char: BluetoothGattCharacteristic): ListenableFuture<Bundle> {
         val request = Request { readCharacteristicInternal(char) }
+        addToQueueAndRun(request)
+        return request.future
+    }
+
+    override fun writeCharacteristic(char: BluetoothGattCharacteristic, data: ByteArray): ListenableFuture<Bundle> {
+        val request = Request { writeCharacteristicInternal(char, data) }
         addToQueueAndRun(request)
         return request.future
     }

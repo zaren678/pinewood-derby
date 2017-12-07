@@ -55,11 +55,11 @@ class ConnectActivity : DaggerAppCompatActivity() {
         super.onCreate(savedInstanceState)
         mViewModel = ViewModelProviders.of(this, viewModelFactory).get(ConnectViewModel::class.java)
 
-        val binding: ActivityConnectBinding = DataBindingUtil.setContentView(this, R.layout.activity_connect)
         val scanResult: ScanResult = intent.extras.getParcelable(SCAN_RESULT_EXTRA)
-
         mViewModel.setBleAddress(scanResult.device.address)
 
+        val binding: ActivityConnectBinding = DataBindingUtil.setContentView(this, R.layout.activity_connect)
+        binding.viewModel = mViewModel
 
         Log.e("TAG", "Scan Result $scanResult")
     }

@@ -58,13 +58,13 @@ class BleServer(context: Context) : Closeable {
 
     private val mGattServerCallback = object : BluetoothGattServerCallback() {
         override fun onCharacteristicWriteRequest(device: BluetoothDevice?, requestId: Int, characteristic: BluetoothGattCharacteristic?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {
-            Log.e(TAG, "onCharacteristicWriteRequest")
+            Log.e(TAG, "onCharacteristicWriteRequest $responseNeeded")
             if (responseNeeded) {
                 mBluetoothGattServer?.sendResponse(device,
                         requestId,
-                        BluetoothGatt.GATT_FAILURE,
+                        BluetoothGatt.GATT_SUCCESS,
                         0,
-                        null)
+                        value)
             }
         }
 
@@ -90,8 +90,22 @@ class BleServer(context: Context) : Closeable {
             }
         }
 
+        override fun onPhyUpdate(device: BluetoothDevice?, txPhy: Int, rxPhy: Int, status: Int) {
+            Log.e(TAG, "onPhyUpdate")
+        }
+
+        override fun onExecuteWrite(device: BluetoothDevice?, requestId: Int, execute: Boolean) {
+            Log.e(TAG, "onExecuteWrite")
+        }
+
         override fun onConnectionStateChange(device: BluetoothDevice?, status: Int, newState: Int) {
             Log.e(TAG, "onConnectionStateChange: $device, $status, $newState")
+
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                stopAdvertising()
+            } else {
+                startAdvertising()
+            }
         }
     }
 
@@ -120,11 +134,13 @@ class BleServer(context: Context) : Closeable {
     }
 
     fun stopServer() {
+        Log.d(TAG, "Stop server")
         mBluetoothGattServer?.close()
         mBluetoothGattServer = null
     }
 
     fun stopAdvertising() {
+        Log.d(TAG, "Stop advertising")
         mBluetoothLeAdvertiser?.stopAdvertising(mAdvertiseCallback)
         mBluetoothLeAdvertiser = null
     }
@@ -139,6 +155,7 @@ class BleServer(context: Context) : Closeable {
     }
 
     private fun startServerImpl() {
+        Log.d(TAG, "Start server")
         mBluetoothGattServer = mBluetoothManager.openGattServer(mContext, mGattServerCallback)
         if (mBluetoothGattServer == null) {
             Log.w(TAG, "Unable to create GATT server")
@@ -149,6 +166,7 @@ class BleServer(context: Context) : Closeable {
     }
 
     private fun startAdvertisingImpl() {
+        Log.d(TAG, "Start advertising")
         val bluetoothAdapter = mBluetoothManager.adapter
         mBluetoothLeAdvertiser = bluetoothAdapter.bluetoothLeAdvertiser
         if (mBluetoothLeAdvertiser == null) {
@@ -179,7 +197,8 @@ class BleServer(context: Context) : Closeable {
                 BluetoothGattCharacteristic.PROPERTY_READ or
                 BluetoothGattCharacteristic.PROPERTY_WRITE or
                 BluetoothGattCharacteristic.PROPERTY_NOTIFY,
-                BluetoothGattCharacteristic.PERMISSION_READ)
+                BluetoothGattCharacteristic.PERMISSION_READ or
+                        BluetoothGattCharacteristic.PERMISSION_WRITE)
 
         service.addCharacteristic(motorState)
 
