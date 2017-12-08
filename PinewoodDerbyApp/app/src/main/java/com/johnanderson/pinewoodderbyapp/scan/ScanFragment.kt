@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.android.databinding.library.baseAdapters.BR
 import com.johnanderson.pinewoodderbyapp.NavigationController
 import com.johnanderson.pinewoodderbyapp.R
 import com.johnanderson.pinewoodderbyapp.databinding.FragmentScanBinding
@@ -29,12 +30,14 @@ class ScanFragment : DaggerFragment(), EasyPermissions.PermissionCallbacks {
 
     private lateinit var mViewModel: ScanViewModel
 
-    private val mDeviceFoundListener = object : Observable.OnPropertyChangedCallback() {
+    private val mPropertyChangedListener = object : Observable.OnPropertyChangedCallback() {
         override fun onPropertyChanged(sender: Observable?, propertyId: Int) {
-            val scanResult = mViewModel.deviceFound.get()
-            if (scanResult != null) {
-                Log.e(TAG, "device found!")
-                navigationController.navigateToConnect(scanResult)
+            if (propertyId == BR.deviceFound) {
+                val scanResult = mViewModel.deviceFound
+                if (scanResult != null) {
+                    Log.e(TAG, "device found!")
+                    navigationController.navigateToConnect(scanResult)
+                }
             }
         }
     }
@@ -50,14 +53,14 @@ class ScanFragment : DaggerFragment(), EasyPermissions.PermissionCallbacks {
                 inflater, R.layout.fragment_scan, container, false)
         binding.viewModel = mViewModel
 
-        mViewModel.deviceFound.addOnPropertyChangedCallback(mDeviceFoundListener)
+        mViewModel.addOnPropertyChangedCallback(mPropertyChangedListener)
         EasyPermissions.requestPermissions(this,"Please?", RC_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
         return binding.root
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mViewModel.deviceFound.removeOnPropertyChangedCallback(mDeviceFoundListener);
+        mViewModel.removeOnPropertyChangedCallback(mPropertyChangedListener)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -70,7 +73,7 @@ class ScanFragment : DaggerFragment(), EasyPermissions.PermissionCallbacks {
 
     override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>?) {
         if (requestCode == RC_LOCATION) {
-            mViewModel.startScanning();
+            mViewModel.startScanning()
         }
     }
 }
