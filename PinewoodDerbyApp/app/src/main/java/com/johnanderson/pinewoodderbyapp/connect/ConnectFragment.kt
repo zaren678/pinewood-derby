@@ -10,25 +10,28 @@ import android.content.ServiceConnection
 import android.databinding.DataBindingUtil
 import android.os.Bundle
 import android.os.IBinder
-import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import com.johnanderson.pinewoodderbyapp.R
 import com.johnanderson.pinewoodderbyapp.ble.BleClientService
-import com.johnanderson.pinewoodderbyapp.databinding.ActivityConnectBinding
-import com.johnanderson.pinewoodderbyapp.scan.ScanViewModel
-import dagger.android.support.DaggerAppCompatActivity
+import com.johnanderson.pinewoodderbyapp.databinding.FragmentConnectBinding
+import dagger.android.support.DaggerFragment
 import javax.inject.Inject
 
-class ConnectActivity : DaggerAppCompatActivity() {
+class ConnectFragment : DaggerFragment() {
 
-    private val TAG: String = ConnectActivity::class.java.simpleName
+    private val TAG: String = ConnectFragment::class.java.simpleName
 
-    companion object IntentFactory {
+    companion object Factory {
         private val SCAN_RESULT_EXTRA: String = "SCAN_RESULT_EXTRA"
-        fun createIntent(context: Context, scanResult: ScanResult): Intent {
-            val intent = Intent(context, ConnectActivity::class.java)
-            intent.putExtra(SCAN_RESULT_EXTRA, scanResult)
-            return intent
+        fun createFragment(context: Context, scanResult: ScanResult): ConnectFragment {
+            val connectFragment = ConnectFragment()
+            val bundle = Bundle()
+            bundle.putParcelable(SCAN_RESULT_EXTRA, scanResult);
+            connectFragment.arguments = bundle
+            return connectFragment
         }
     }
 
@@ -36,6 +39,7 @@ class ConnectActivity : DaggerAppCompatActivity() {
     lateinit var viewModelFactory: ViewModelProvider.Factory
 
     private lateinit var mViewModel: ConnectViewModel
+    private lateinit var mScanResult: ScanResult
 
     private val mServiceConnection = object: ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -54,24 +58,26 @@ class ConnectActivity : DaggerAppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mViewModel = ViewModelProviders.of(this, viewModelFactory).get(ConnectViewModel::class.java)
+        mScanResult = arguments.getParcelable(SCAN_RESULT_EXTRA)
+        mViewModel.setBleAddress(mScanResult.device.address)
+    }
 
-        val scanResult: ScanResult = intent.extras.getParcelable(SCAN_RESULT_EXTRA)
-        mViewModel.setBleAddress(scanResult.device.address)
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        super.onCreateView(inflater, container, savedInstanceState)
+        val binding: FragmentConnectBinding = DataBindingUtil.inflate(inflater, R.layout.fragment_connect, container, false)
 
-        val binding: ActivityConnectBinding = DataBindingUtil.setContentView(this, R.layout.activity_connect)
         binding.viewModel = mViewModel
-
-        Log.e("TAG", "Scan Result $scanResult")
+        return binding.root
     }
 
     override fun onStart() {
         super.onStart()
-        val serviceIntent = Intent(this, BleClientService::class.java)
-        bindService(serviceIntent, mServiceConnection, Context.BIND_AUTO_CREATE)
+        val serviceIntent = Intent(context, BleClientService::class.java)
+        activity.bindService(serviceIntent, mServiceConnection, Context.BIND_AUTO_CREATE)
     }
 
     override fun onStop() {
         super.onStop()
-        unbindService(mServiceConnection)
+        activity.unbindService(mServiceConnection)
     }
 }

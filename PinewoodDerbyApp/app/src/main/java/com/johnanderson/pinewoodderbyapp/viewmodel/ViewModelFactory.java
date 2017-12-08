@@ -1,4 +1,4 @@
-package com.johnanderson.pinewoodderbyapp.di;
+package com.johnanderson.pinewoodderbyapp.viewmodel;
 
 import android.arch.lifecycle.ViewModel;
 import android.arch.lifecycle.ViewModelProvider;

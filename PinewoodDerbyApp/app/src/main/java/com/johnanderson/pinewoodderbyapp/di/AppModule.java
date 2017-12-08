@@ -4,6 +4,8 @@ import android.app.Application;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 
+import com.johnanderson.pinewoodderbyapp.viewmodel.ViewModelModule;
+
 import javax.inject.Singleton;
 
 import dagger.Binds;
