@@ -11,4 +11,7 @@ interface BleClient {
     fun writeCharacteristic(char: BluetoothGattCharacteristic, data: ByteArray): ListenableFuture<Bundle>
     fun getSupportedGattServices(): List<BluetoothGattService>?
     fun disconnect()
+
+    fun addCharacteristicListener(char: BluetoothGattCharacteristic, f:(BluetoothGattCharacteristic)->Unit):ListenableFuture<Bundle>
+    fun removeCharacteristicListener(char: BluetoothGattCharacteristic, f: (BluetoothGattCharacteristic) -> Unit): ListenableFuture<Bundle>
 }

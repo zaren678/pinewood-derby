@@ -6,6 +6,7 @@ import com.johnanderson.pinewoodderbyapp.di.DaggerAppComponent;
 
 import dagger.android.AndroidInjector;
 import dagger.android.support.DaggerApplication;
+import timber.log.Timber;
 
 /**
  * Created by johnanderson on 12/4/17.
@@ -28,6 +29,7 @@ public class MyApplication extends DaggerApplication {
     @Override
     public void onCreate() {
         super.onCreate();
+        Timber.plant(new Timber.DebugTree());
         AppInjector.INSTANCE.init(appComponent, this);
     }
 }

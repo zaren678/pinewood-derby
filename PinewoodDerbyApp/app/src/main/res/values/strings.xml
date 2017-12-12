@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">PinewoodDerbyApp</string>
+    <string name="retry">Retry</string>
+    <string name="connecting">Connecting...</string>
+    <string name="connected">Connected</string>
 </resources>

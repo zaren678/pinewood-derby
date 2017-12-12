@@ -18,7 +18,7 @@ class NavigationController @Inject constructor(private val mainActivity: MainAct
     }
 
     fun navigateToConnect(scanResult: ScanResult) {
-        val scanFragment = ConnectFragment.createFragment(mainActivity, scanResult);
+        val scanFragment = ConnectFragment.createFragment(scanResult)
         fragmentManager.beginTransaction()
                 .replace(containerId, scanFragment)
                 .addToBackStack(null)

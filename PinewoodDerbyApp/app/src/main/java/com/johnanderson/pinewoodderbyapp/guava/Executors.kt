@@ -80,3 +80,5 @@ object DirectExecutor : ExecutorService {
 }
 
 object ForkJoinExecutor : ExecutorService by ForkJoinPool.commonPool()
+val scheduledExecutorService: ScheduledExecutorService = Executors.newScheduledThreadPool(5)
+val defaultExecutor: ExecutorService = DirectExecutor

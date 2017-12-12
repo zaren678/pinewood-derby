@@ -90,6 +90,7 @@ class ScanViewModel @Inject constructor(mApplication: Application, mBluetoothMan
     }
 
     override fun onCleared() {
+        Log.e(TAG, "Stop Scan")
         mBluetoothLeScanner.stopScan(mScanCallback)
         state = State.IDLE
     }
