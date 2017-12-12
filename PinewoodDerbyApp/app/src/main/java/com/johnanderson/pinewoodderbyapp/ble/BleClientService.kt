@@ -12,6 +12,7 @@ import com.google.common.util.concurrent.SettableFuture
 import com.johnanderson.pinewoodderbyapp.ext.isNullOrEmpty
 import com.johnanderson.pinewoodderbyapp.guava.scheduledExecutorService
 import com.johnanderson.pinewoodderbyapp.guava.toListenableFuture
+import com.johnanderson.pinewoodderbybleshared.BleConstants
 import com.johnanderson.pinewoodderbybleshared.PinewoodDerbyBleConstants
 import timber.log.Timber
 import java.io.Closeable
@@ -247,7 +248,7 @@ class BleClientService: Service(), Closeable, BleClient {
             setError(Exception("Characteristic is not notifiable"))
         }
 
-        val descriptor = char.getDescriptor(PinewoodDerbyBleConstants.CLIENT_CONFIG_DESCRIPTOR)
+        val descriptor = char.getDescriptor(BleConstants.CLIENT_CONFIG_DESCRIPTOR)
         if (descriptor == null) {
             setError(Exception("Characteristic does not have client configuration"))
         }
@@ -267,7 +268,7 @@ class BleClientService: Service(), Closeable, BleClient {
             setError(Exception("Characteristic is not notifiable"))
         }
 
-        val descriptor = char.getDescriptor(PinewoodDerbyBleConstants.CLIENT_CONFIG_DESCRIPTOR)
+        val descriptor = char.getDescriptor(BleConstants.CLIENT_CONFIG_DESCRIPTOR)
         if (descriptor == null) {
             setError(Exception("Characteristic does not have client configuration"))
         }

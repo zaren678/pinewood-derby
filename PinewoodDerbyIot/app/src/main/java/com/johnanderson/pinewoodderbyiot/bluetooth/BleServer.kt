@@ -12,32 +12,25 @@ import android.content.IntentFilter
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
-import com.johnanderson.pinewoodderbybleshared.PinewoodDerbyBleConstants
-import com.johnanderson.pinewoodderbybleshared.models.MotorState
+import com.johnanderson.pinewoodderbybleshared.BleConstants
 import timber.log.Timber
 import java.io.Closeable
 import java.util.*
 import kotlin.collections.HashSet
 
-class BleServer(context: Context) : Closeable {
+abstract class BleServer(private val mContext: Context, private val mBluetoothManager: BluetoothManager) : Closeable {
 
-    private var mBluetoothManager: BluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-    private lateinit var mBluetoothAdapter: BluetoothAdapter
+    private val mBluetoothAdapter: BluetoothAdapter = mBluetoothManager.adapter
     private var mBluetoothLeAdvertiser: BluetoothLeAdvertiser? = null
     private var mBluetoothGattServer: BluetoothGattServer? = null
 
     private val mRegisteredDevices: MutableSet<BluetoothDevice?> = HashSet()
-
-    private var mContext: Context = context
 
     //TODO hide android stuff in an interface
     private val mUiHandler: Handler = Handler(Looper.getMainLooper())
 
     private var mRunAfterEnabledQueue: Queue<()->Unit> = ArrayDeque<()->Unit>()
     private var mRunAfterDisabledQueue: Queue<()->Unit> = ArrayDeque<()->Unit>()
-
-    //TODO this should be moved to a repository
-    private lateinit var mMotorState: MotorState
 
     private val mBluetoothReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -86,44 +79,65 @@ class BleServer(context: Context) : Closeable {
         override fun onCharacteristicWriteRequest(device: BluetoothDevice?, requestId: Int, characteristic: BluetoothGattCharacteristic?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {
             Timber.d("onCharacteristicWriteRequest $responseNeeded")
 
-            val decode = MotorState.ADAPTER.decode(value)
-            if (decode != null) {
-                mMotorState = decode
-                notifyRegisteredDevices()
+            mBluetoothGattServer?.services?.forEach {
+                it.characteristics.filterNotNull().forEach {
+                    if (characteristic != null &&
+                            characteristic.properties.and(BluetoothGattCharacteristic.PROPERTY_WRITE) != 0 &&
+                            it.uuid == characteristic.uuid) {
+                        val result = writeCharacteristic(characteristic, value)
+                        if (result) {
+                            if (responseNeeded) {
+                                mBluetoothGattServer?.sendResponse(device,
+                                        requestId,
+                                        BluetoothGatt.GATT_SUCCESS,
+                                        0,
+                                        value)
+                                return
+                            }
+                        }
+                    }
+                }
             }
 
             if (responseNeeded) {
                 mBluetoothGattServer?.sendResponse(device,
                         requestId,
-                        BluetoothGatt.GATT_SUCCESS,
+                        BluetoothGatt.GATT_FAILURE,
                         0,
-                        MotorState.ADAPTER.encode(mMotorState))
+                        null)
             }
         }
 
         override fun onCharacteristicReadRequest(device: BluetoothDevice?, requestId: Int, offset: Int, characteristic: BluetoothGattCharacteristic?) {
             Timber.d("onCharacteristicReadRequest")
-            when (characteristic?.uuid) {
-                PinewoodDerbyBleConstants.MOTOR_STATE_CHARACTERISTIC -> {
-                    mBluetoothGattServer?.sendResponse(device,
-                            requestId,
-                            BluetoothGatt.GATT_SUCCESS,
-                            0,
-                            MotorState.ADAPTER.encode(mMotorState))
-                }
-                else -> {
-                    Timber.w("Invalid Characteristic Read: ${characteristic?.uuid}")
-                    mBluetoothGattServer?.sendResponse(device,
-                            requestId,
-                            BluetoothGatt.GATT_FAILURE,
-                            0,
-                            null)
+            mBluetoothGattServer?.services?.forEach {
+                it.characteristics.filterNotNull().forEach {
+                    if (characteristic != null &&
+                        characteristic.properties.and(BluetoothGattCharacteristic.PROPERTY_READ) != 0 &&
+                        it.uuid == characteristic.uuid) {
+                        val (result, data) = readCharacteristic(characteristic)
+                        if (result) {
+                            mBluetoothGattServer?.sendResponse(device,
+                                    requestId,
+                                    BluetoothGatt.GATT_SUCCESS,
+                                    0,
+                                    data)
+                            return
+                        }
+                    }
                 }
             }
+
+            Timber.w("Invalid Characteristic Read: ${characteristic?.uuid}")
+            mBluetoothGattServer?.sendResponse(device,
+                    requestId,
+                    BluetoothGatt.GATT_FAILURE,
+                    0,
+                    null)
         }
 
         override fun onDescriptorReadRequest(device: BluetoothDevice?, requestId: Int, offset: Int, descriptor: BluetoothGattDescriptor?) {
-            if (PinewoodDerbyBleConstants.CLIENT_CONFIG_DESCRIPTOR == descriptor?.uuid) {
+            if (BleConstants.CLIENT_CONFIG_DESCRIPTOR == descriptor?.uuid) {
                 Timber.d("Config descriptor read")
                 val returnValue: ByteArray = if (mRegisteredDevices.contains(device)) {
                     BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
@@ -150,7 +164,7 @@ class BleServer(context: Context) : Closeable {
         }
 
         override fun onDescriptorWriteRequest(device: BluetoothDevice?, requestId: Int, descriptor: BluetoothGattDescriptor?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {
-            if (PinewoodDerbyBleConstants.CLIENT_CONFIG_DESCRIPTOR == descriptor?.uuid) {
+            if (BleConstants.CLIENT_CONFIG_DESCRIPTOR == descriptor?.uuid) {
                 if (Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, value)) {
                     Timber.d("Subscribe device to notifications: $device")
                     mRegisteredDevices.add(device)
@@ -194,29 +208,20 @@ class BleServer(context: Context) : Closeable {
     }
 
     init {
-        mBluetoothAdapter = mBluetoothManager.adapter
         val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
         mContext.registerReceiver(mBluetoothReceiver, filter)
-
-        mMotorState = MotorState.Builder().direction(MotorState.Direction.FORWARD).speed(100).test(true).build()
     }
 
-    private fun notifyRegisteredDevices() {
+    fun notifyRegisteredDevices(char:BluetoothGattCharacteristic) {
         if (mRegisteredDevices.isEmpty()) {
             Timber.d("No subscribers registered")
             return
         }
 
         Timber.d("Sending update to ${mRegisteredDevices.size} subscribers")
-        for (device in mRegisteredDevices) {
-            val characteristic = mBluetoothGattServer
-                    ?.getService(PinewoodDerbyBleConstants.SERVICE_ID)
-                    ?.getCharacteristic(PinewoodDerbyBleConstants.MOTOR_STATE_CHARACTERISTIC)
-            characteristic?.value = MotorState.ADAPTER.encode(mMotorState)
-            if (device != null && characteristic != null) {
-                mBluetoothGattServer?.notifyCharacteristicChanged(device, characteristic, false)
-            }
-        }
+        mRegisteredDevices
+                .filterNotNull()
+                .forEach { mBluetoothGattServer?.notifyCharacteristicChanged(it, char, false) }
     }
 
     override fun close() {
@@ -302,35 +307,44 @@ class BleServer(context: Context) : Closeable {
         val data = AdvertiseData.Builder()
                 .setIncludeDeviceName(true)
                 .setIncludeTxPowerLevel(false)
-                .addServiceUuid(ParcelUuid(PinewoodDerbyBleConstants.SERVICE_ID))
+                .addServiceUuid(ParcelUuid(getServiceId()))
                 .build()
 
         mBluetoothLeAdvertiser?.startAdvertising(settings, data, mAdvertiseCallback)
     }
 
-    private fun createService(): BluetoothGattService {
-        val service = BluetoothGattService(PinewoodDerbyBleConstants.SERVICE_ID, BluetoothGattService.SERVICE_TYPE_PRIMARY)
+    internal abstract fun createService(): BluetoothGattService
+    internal abstract fun getServiceId(): UUID
 
-        val motorState = BluetoothGattCharacteristic(PinewoodDerbyBleConstants.MOTOR_STATE_CHARACTERISTIC,
-                BluetoothGattCharacteristic.PROPERTY_READ or
-                BluetoothGattCharacteristic.PROPERTY_WRITE or
-                BluetoothGattCharacteristic.PROPERTY_NOTIFY,
-                BluetoothGattCharacteristic.PERMISSION_READ or
-                        BluetoothGattCharacteristic.PERMISSION_WRITE)
+    /**
+     * Read a characteristic, result has a boolean and byte array. If the boolean is false then the
+     * read operation failed
+     */
+    internal abstract fun readCharacteristic(char:BluetoothGattCharacteristic): Result
 
-        val motorStateDescriptor = BluetoothGattDescriptor(PinewoodDerbyBleConstants.CLIENT_CONFIG_DESCRIPTOR,
-                BluetoothGattCharacteristic.PERMISSION_READ or
-                        BluetoothGattCharacteristic.PERMISSION_WRITE)
+    /**
+     * Write a characteristic, result has a boolean. If the boolean is false then the
+     * write operation failed
+     */
+    internal abstract fun writeCharacteristic(char:BluetoothGattCharacteristic, data:ByteArray?): Boolean
 
-        val userDescriptor = BluetoothGattDescriptor(PinewoodDerbyBleConstants.USER_DESCRIPTOR,
-                BluetoothGattCharacteristic.PERMISSION_READ)
-        userDescriptor.value = "Motor State".toByteArray()
+    data class Result(val result: Boolean, val data: ByteArray) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
 
-        motorState.addDescriptor(motorStateDescriptor)
-        motorState.addDescriptor(userDescriptor)
+            other as Result
 
-        service.addCharacteristic(motorState)
+            if (result != other.result) return false
+            if (!Arrays.equals(data, other.data)) return false
 
-        return service
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result1 = result.hashCode()
+            result1 = 31 * result1 + Arrays.hashCode(data)
+            return result1
+        }
     }
 }

@@ -3,6 +3,9 @@ package com.johnanderson.pinewoodderbyiot
 import android.app.Activity
 import android.os.Bundle
 import com.johnanderson.pinewoodderbyiot.bluetooth.BleServer
+import com.johnanderson.pinewoodderbyiot.bluetooth.MotorBleServer
+import dagger.android.support.DaggerAppCompatActivity
+import javax.inject.Inject
 
 /**
  * Skeleton of an Android Things activity.
@@ -24,13 +27,12 @@ import com.johnanderson.pinewoodderbyiot.bluetooth.BleServer
  * @see <a href="https://github.com/androidthings/contrib-drivers#readme">https://github.com/androidthings/contrib-drivers#readme</a>
  *
  */
-class MainActivity : Activity() {
+class MainActivity : DaggerAppCompatActivity() {
 
-    private lateinit var mBleServer: BleServer
+    @Inject lateinit var mBleServer: MotorBleServer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mBleServer = BleServer(this)
         mBleServer.startAdvertising()
         mBleServer.startServer()
     }

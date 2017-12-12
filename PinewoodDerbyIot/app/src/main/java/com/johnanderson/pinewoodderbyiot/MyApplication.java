@@ -1,8 +1,8 @@
-package com.johnanderson.pinewoodderbyapp;
+package com.johnanderson.pinewoodderbyiot;
 
-import com.johnanderson.pinewoodderbyapp.di.AppComponent;
-import com.johnanderson.pinewoodderbyapp.di.AppInjector;
-import com.johnanderson.pinewoodderbyapp.di.DaggerAppComponent;
+import com.johnanderson.pinewoodderbyiot.di.AppComponent;
+import com.johnanderson.pinewoodderbyiot.di.AppInjector;
+import com.johnanderson.pinewoodderbyiot.di.DaggerAppComponent;
 
 import dagger.android.AndroidInjector;
 import dagger.android.support.DaggerApplication;
