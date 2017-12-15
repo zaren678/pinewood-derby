@@ -8,21 +8,24 @@ import android.bluetooth.BluetoothManager
 import com.johnanderson.pinewoodderbybleshared.BleConstants
 import com.johnanderson.pinewoodderbybleshared.PinewoodDerbyBleConstants
 import com.johnanderson.pinewoodderbybleshared.models.MotorState
+import com.johnanderson.pinewoodderbyiot.repos.MotorStateRepo
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class MotorBleServer @Inject constructor(mApplication: Application, mBluetoothManager: BluetoothManager): BleServer(mApplication, mBluetoothManager) {
-
-    //TODO this should be moved to a repository
-    private var mMotorState: MotorState = MotorState.Builder().direction(MotorState.Direction.FORWARD).speed(100).test(true).build()
+class MotorBleServer @Inject constructor(mApplication: Application, mBluetoothManager: BluetoothManager, private val mMotorStateRepo: MotorStateRepo): BleServer(mApplication, mBluetoothManager) {
 
     private lateinit var mMotorCharacteristic: BluetoothGattCharacteristic
     private val mService: BluetoothGattService
 
+    private val mChangeListener:()->Unit = {
+        notifyMotorStateChanged()
+    }
+
     init {
         mService = initService()
+        mMotorStateRepo.addChangeListener(mChangeListener)
     }
 
     private fun initService(): BluetoothGattService {
@@ -52,7 +55,7 @@ class MotorBleServer @Inject constructor(mApplication: Application, mBluetoothMa
     }
 
     private fun notifyMotorStateChanged() {
-        mMotorCharacteristic.value = MotorState.ADAPTER.encode(mMotorState)
+        mMotorCharacteristic.value = MotorState.ADAPTER.encode(mMotorStateRepo.getMotorState())
         notifyRegisteredDevices(mMotorCharacteristic)
     }
 
@@ -65,18 +68,25 @@ class MotorBleServer @Inject constructor(mApplication: Application, mBluetoothMa
     }
 
     override fun readCharacteristic(char: BluetoothGattCharacteristic): Result {
-        val encode = MotorState.ADAPTER.encode(mMotorState)
-        return Result(true, encode)
+        return when {
+            char.uuid == PinewoodDerbyBleConstants.MOTOR_STATE_CHARACTERISTIC -> {
+                val encode = MotorState.ADAPTER.encode(mMotorStateRepo.getMotorState())
+                Result(true, encode)
+            }
+            else -> Result(false)
+        }
     }
 
     override fun writeCharacteristic(char: BluetoothGattCharacteristic, data:ByteArray?): Boolean {
-        val decode = MotorState.ADAPTER.decode(data)
-        if (decode != null) {
-            mMotorState = decode
-            notifyMotorStateChanged()
-            return true
+        when {
+            char.uuid == PinewoodDerbyBleConstants.MOTOR_STATE_CHARACTERISTIC -> {
+                val decode = MotorState.ADAPTER.decode(data)
+                if (decode != null) {
+                    mMotorStateRepo.updateMotorState(decode)
+                    return true
+                }
+            }
         }
-
         return false
     }
 }

@@ -328,7 +328,7 @@ abstract class BleServer(private val mContext: Context, private val mBluetoothMa
      */
     internal abstract fun writeCharacteristic(char:BluetoothGattCharacteristic, data:ByteArray?): Boolean
 
-    data class Result(val result: Boolean, val data: ByteArray) {
+    data class Result(val result: Boolean, val data: ByteArray? = null) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -343,7 +343,7 @@ abstract class BleServer(private val mContext: Context, private val mBluetoothMa
 
         override fun hashCode(): Int {
             var result1 = result.hashCode()
-            result1 = 31 * result1 + Arrays.hashCode(data)
+            result1 = 31 * result1 + (data?.let { Arrays.hashCode(it) } ?: 0)
             return result1
         }
     }
