@@ -47,7 +47,7 @@ class ScanFragment : DaggerFragment(), EasyPermissions.PermissionCallbacks {
         mViewModel = ViewModelProviders.of(this, viewModelFactory).get(ScanViewModel::class.java)
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         super.onCreateView(inflater, container, savedInstanceState)
         val binding: FragmentScanBinding = DataBindingUtil.inflate(
                 inflater, R.layout.fragment_scan, container, false)

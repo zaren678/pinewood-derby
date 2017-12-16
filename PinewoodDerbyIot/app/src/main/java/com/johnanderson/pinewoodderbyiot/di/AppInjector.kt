@@ -34,7 +34,7 @@ object AppInjector {
 
     private fun handleActivity(activity: Activity) {
         if (activity is HasSupportFragmentInjector) {
-            AndroidInjection.inject(activity)
+            //AndroidInjection.inject(activity)
         }
         (activity as? FragmentActivity)?.supportFragmentManager?.registerFragmentLifecycleCallbacks(
                 object : FragmentManager.FragmentLifecycleCallbacks() {

@@ -1,10 +1,7 @@
 package com.johnanderson.pinewoodderbyapp.connect
 
 import android.app.Application
-import android.arch.lifecycle.AndroidViewModel
-import android.arch.lifecycle.LiveData
 import android.arch.lifecycle.Observer
-import android.bluetooth.BluetoothManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -12,7 +9,6 @@ import android.content.ServiceConnection
 import android.databinding.Bindable
 import android.os.Handler
 import android.os.IBinder
-import android.util.Log
 import com.johnanderson.pinewoodderbyapp.BR
 import com.johnanderson.pinewoodderbyapp.binding.ObservableAndroidViewModel
 import com.johnanderson.pinewoodderbyapp.binding.bindable
@@ -20,7 +16,6 @@ import com.johnanderson.pinewoodderbyapp.ble.BleClient
 import com.johnanderson.pinewoodderbyapp.ble.BleClientService
 import com.johnanderson.pinewoodderbyapp.ble.MotorBleGattServiceClient
 import com.johnanderson.pinewoodderbyapp.guava.onComplete
-import com.johnanderson.pinewoodderbyapp.scan.ScanViewModel
 import com.johnanderson.pinewoodderbybleshared.PinewoodDerbyBleConstants
 import com.johnanderson.pinewoodderbybleshared.models.MotorState
 import timber.log.Timber
@@ -44,10 +39,6 @@ class ConnectViewModel @Inject constructor(private val mApplication: Application
 
     @get:Bindable
     var errorText: String by bindable("", BR.errorText)
-        private set
-
-    @get:Bindable
-    var example: Int by bindable(0, BR.example)
         private set
 
     private val mServiceConnection = object: ServiceConnection {
@@ -108,12 +99,16 @@ class ConnectViewModel @Inject constructor(private val mApplication: Application
     }
 
     fun writeMotorState() {
+        val motorState = MotorState.Builder().test(true).speed(55).direction(MotorState.Direction.BACKWARD).build()
+        writeMotorState(motorState)
+    }
+
+    private fun writeMotorState(motorState:MotorState) {
         if (mBleClient == null || mAddress == null) {
             return
         }
 
-        val motorState = MotorState.Builder().test(true).speed(55).direction(MotorState.Direction.BACKWARD).build()
-        Timber.d("About to write motor state: " + motorState)
+        Timber.d("About to write motor state: $motorState")
         val future = mMotorBleGattServiceClient?.writeMotorState(motorState)
         future?.onComplete(
                 onFailure = { throwable ->
@@ -121,9 +116,14 @@ class ConnectViewModel @Inject constructor(private val mApplication: Application
                     Timber.e("Failed to write: $throwable")
                 },
                 onSuccess = { state ->
-                    Timber.d("Motor state written: " + state)
+                    Timber.d("Motor state written: $state")
                 }
         )
+    }
+
+    fun setLight(b:Boolean) {
+        val motorState = MotorState.Builder().test(b).speed(55).direction(MotorState.Direction.BACKWARD).build()
+        writeMotorState(motorState)
     }
 
     override fun onCleared() {

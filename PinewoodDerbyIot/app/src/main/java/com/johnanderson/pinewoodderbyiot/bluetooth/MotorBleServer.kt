@@ -8,13 +8,15 @@ import android.bluetooth.BluetoothManager
 import com.johnanderson.pinewoodderbybleshared.BleConstants
 import com.johnanderson.pinewoodderbybleshared.PinewoodDerbyBleConstants
 import com.johnanderson.pinewoodderbybleshared.models.MotorState
-import com.johnanderson.pinewoodderbyiot.repos.MotorStateRepo
+import com.johnanderson.pinewoodderbyiot.repo.MotorStateRepo
 import java.util.*
 import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class MotorBleServer @Inject constructor(mApplication: Application, mBluetoothManager: BluetoothManager, private val mMotorStateRepo: MotorStateRepo): BleServer(mApplication, mBluetoothManager) {
+class MotorBleServer @Inject constructor(
+        mApplication: Application,
+        mBluetoothManager: BluetoothManager,
+        private val mMotorStateRepo: MotorStateRepo
+): BleServer(mApplication, mBluetoothManager), AutoCloseable {
 
     private lateinit var mMotorCharacteristic: BluetoothGattCharacteristic
     private val mService: BluetoothGattService

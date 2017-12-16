@@ -1,4 +1,4 @@
-package com.johnanderson.pinewoodderbyiot.repos
+package com.johnanderson.pinewoodderbyiot.repo
 
 import com.johnanderson.pinewoodderbybleshared.models.MotorState
 import javax.inject.Inject
@@ -10,7 +10,7 @@ class MotorStateRepo @Inject constructor() {
     private val mListeners:MutableList<()->Unit> = ArrayList()
     private var mMotorState:MotorState = MotorState(0, MotorState.Direction.FORWARD, false)
 
-    fun getMotorState(): MotorState? {
+    fun getMotorState(): MotorState {
         synchronized(mMotorState) {
             return mMotorState
         }

@@ -18,7 +18,10 @@ import java.io.Closeable
 import java.util.*
 import kotlin.collections.HashSet
 
-abstract class BleServer(private val mContext: Context, private val mBluetoothManager: BluetoothManager) : Closeable {
+abstract class BleServer(
+        private val mContext: Context,
+        private val mBluetoothManager: BluetoothManager
+) : AutoCloseable {
 
     private val mBluetoothAdapter: BluetoothAdapter = mBluetoothManager.adapter
     private var mBluetoothLeAdvertiser: BluetoothLeAdvertiser? = null

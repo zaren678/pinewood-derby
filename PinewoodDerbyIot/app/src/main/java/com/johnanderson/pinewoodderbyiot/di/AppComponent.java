@@ -2,6 +2,8 @@ package com.johnanderson.pinewoodderbyiot.di;
 
 import android.app.Application;
 
+import com.johnanderson.pinewoodderbyiot.board.BoardDefaultsModule;
+
 import javax.inject.Singleton;
 
 import dagger.BindsInstance;
@@ -11,7 +13,12 @@ import dagger.android.support.AndroidSupportInjectionModule;
 import dagger.android.support.DaggerApplication;
 
 @Singleton
-@Component(modules = {AndroidSupportInjectionModule.class, AppModule.class, MainActivityModule.class})
+@Component(modules = {
+        AndroidSupportInjectionModule.class,
+        AppModule.class,
+        MainActivityModule.class,
+        BoardDefaultsModule.class
+})
 public interface AppComponent extends AndroidInjector<DaggerApplication> {
     @Component.Builder
     interface Builder {

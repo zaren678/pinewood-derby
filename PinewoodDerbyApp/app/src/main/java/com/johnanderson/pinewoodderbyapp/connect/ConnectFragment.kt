@@ -30,19 +30,23 @@ class ConnectFragment : DaggerFragment() {
     lateinit var viewModelFactory: ViewModelProvider.Factory
 
     private lateinit var mViewModel: ConnectViewModel
-    private lateinit var mScanResult: ScanResult
+    private var mScanResult: ScanResult? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mViewModel = ViewModelProviders.of(this, viewModelFactory).get(ConnectViewModel::class.java)
-        mScanResult = arguments.getParcelable(SCAN_RESULT_EXTRA)
-        mViewModel.setBleAddress(mScanResult.device.address)
+        mScanResult = arguments?.getParcelable(SCAN_RESULT_EXTRA)
+        if (mScanResult != null) {
+            mViewModel.setBleAddress(mScanResult?.device?.address!!)
+        } else {
+            throw IllegalArgumentException("Scan results not in arguments")
+        }
         if (savedInstanceState == null) {
             //mViewModel.init()
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         super.onCreateView(inflater, container, savedInstanceState)
         val binding: FragmentConnectBinding = DataBindingUtil.inflate(inflater, R.layout.fragment_connect, container, false)
 

@@ -1,28 +1,27 @@
 package com.johnanderson.pinewoodderbyapp.di
 
-import dagger.android.support.AndroidSupportInjection
-import android.os.Bundle
-import android.support.v4.app.FragmentActivity
-import dagger.android.AndroidInjection
-import dagger.android.support.HasSupportFragmentInjector
 import android.app.Activity
 import android.app.Application
+import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.app.FragmentActivity
 import android.support.v4.app.FragmentManager
-import android.util.Log
 import com.johnanderson.pinewoodderbyapp.MyApplication
+import dagger.android.AndroidInjection
+import dagger.android.support.AndroidSupportInjection
+import dagger.android.support.HasSupportFragmentInjector
+import timber.log.Timber
 
 
 object AppInjector {
-    private val TAG: String = AppInjector.javaClass.simpleName
 
     fun init(appComponent: AppComponent, myApplication: MyApplication) {
-        Log.e(TAG, "appComponent " + appComponent)
+        Timber.d("appComponent $appComponent")
         appComponent.inject(myApplication)
         myApplication
                 .registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
                     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                        handleActivity(activity)
+                        //handleActivity(activity)
                     }
 
                     override fun onActivityStarted(activity: Activity) {}

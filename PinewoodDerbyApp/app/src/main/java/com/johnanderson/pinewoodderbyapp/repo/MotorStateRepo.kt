@@ -26,8 +26,8 @@ class MotorStateRepo {
         }
     }
 
-    fun setMotoeBleClient(m:MotorBleGattServiceClient) {
-        mMotorBleClient = m;
+    fun setMotorBleClient(m:MotorBleGattServiceClient) {
+        mMotorBleClient = m
         if (mMotorBleClient != null) {
             //TODO register for notifications
         }
