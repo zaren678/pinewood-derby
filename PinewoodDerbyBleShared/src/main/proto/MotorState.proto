@@ -5,16 +5,8 @@ package johnanderson.pinewoodderbybleshared.models;
 option java_package = "com.johnanderson.pinewoodderbybleshared.models";
 
 message MotorState {
-    enum Direction {
-        FORWARD = 0;
-        BACKWARD = 1;
-    }
-
-    // Speed of the motor (0-255)
-    required int32 speed = 1;
-
-    // Direction of the motor
-    required Direction direction = 2;
+    // Speed of the motor (-100 to 100), negative will be reverse
+    required double speed = 1;
 
     // just a test boolean to play with
     required bool test = 3;

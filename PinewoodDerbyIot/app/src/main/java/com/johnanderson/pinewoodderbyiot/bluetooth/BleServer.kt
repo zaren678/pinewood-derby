@@ -14,7 +14,6 @@ import android.os.Looper
 import android.os.ParcelUuid
 import com.johnanderson.pinewoodderbybleshared.BleConstants
 import timber.log.Timber
-import java.io.Closeable
 import java.util.*
 import kotlin.collections.HashSet
 
@@ -28,6 +27,8 @@ abstract class BleServer(
     private var mBluetoothGattServer: BluetoothGattServer? = null
 
     private val mRegisteredDevices: MutableSet<BluetoothDevice?> = HashSet()
+
+    private var mDisconnectListener: ()->Unit = {}
 
     //TODO hide android stuff in an interface
     private val mUiHandler: Handler = Handler(Looper.getMainLooper())
@@ -204,6 +205,7 @@ abstract class BleServer(
                 }
             } else {
                 mUiHandler.post {
+                    mDisconnectListener()
                     startAdvertising()
                 }
             }
@@ -256,6 +258,10 @@ abstract class BleServer(
         Timber.d("Stop advertising")
         mBluetoothLeAdvertiser?.stopAdvertising(mAdvertiseCallback)
         mBluetoothLeAdvertiser = null
+    }
+
+    fun setDisconnectListener(f:()->Unit) {
+        mDisconnectListener = f
     }
 
     private fun runAfterEnabled(f:()->Unit) {

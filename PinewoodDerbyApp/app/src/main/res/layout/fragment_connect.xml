@@ -74,8 +74,8 @@
             android:id="@+id/connected_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="@{(v)->viewModel.writeMotorState()}"
             android:text="@string/connected"
+            android:visibility="gone"
             app:layout_constraintBottom_toTopOf="@+id/light_switch"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
@@ -87,15 +87,32 @@
             android:id="@+id/light_switch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onCheckedChanged="@{(v,c)->viewModel.setLight(c)}"
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
+            android:onCheckedChanged="@{(v,c)->viewModel.setTest(c)}"
             android:text="@string/light"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="@+id/connected_button"
             app:layout_constraintStart_toStartOf="@+id/connected_button"
             app:layout_constraintTop_toBottomOf="@+id/connected_button" />
+
+        <io.github.controlwear.virtual.joystick.android.JoystickView
+            android:id="@+id/joystick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:JV_buttonColor="#FF6E40"
+            app:JV_buttonSizeRatio="15%"
+            app:JV_borderColor="#00796B"
+            app:JV_backgroundColor="#009688"
+            app:JV_borderWidth="4dp"
+            app:JV_fixedCenter="false"
+            app:JV_buttonDirection="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <android.support.constraint.Group
             android:id="@+id/connecting_group"
@@ -118,7 +135,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:visibility="visible"
-            app:constraint_referenced_ids="connected_button,light_switch"
+            app:constraint_referenced_ids="joystick"
             app:show="@{viewModel.state == State.CONNECTED}" />
 
 

@@ -9,12 +9,11 @@ import com.squareup.wire.Message;
 import com.squareup.wire.ProtoAdapter;
 import com.squareup.wire.ProtoReader;
 import com.squareup.wire.ProtoWriter;
-import com.squareup.wire.WireEnum;
 import com.squareup.wire.WireField;
 import com.squareup.wire.internal.Internal;
 import java.io.IOException;
 import java.lang.Boolean;
-import java.lang.Integer;
+import java.lang.Double;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
@@ -28,31 +27,19 @@ public final class MotorState extends AndroidMessage<MotorState, MotorState.Buil
 
   private static final long serialVersionUID = 0L;
 
-  public static final Integer DEFAULT_SPEED = 0;
-
-  public static final Direction DEFAULT_DIRECTION = Direction.FORWARD;
+  public static final Double DEFAULT_SPEED = 0.0d;
 
   public static final Boolean DEFAULT_TEST = false;
 
   /**
-   * Speed of the motor (0-255)
+   * Speed of the motor (-100 to 100), negative will be reverse
    */
   @WireField(
       tag = 1,
-      adapter = "com.squareup.wire.ProtoAdapter#INT32",
+      adapter = "com.squareup.wire.ProtoAdapter#DOUBLE",
       label = WireField.Label.REQUIRED
   )
-  public final Integer speed;
-
-  /**
-   * Direction of the motor
-   */
-  @WireField(
-      tag = 2,
-      adapter = "com.johnanderson.pinewoodderbybleshared.models.MotorState$Direction#ADAPTER",
-      label = WireField.Label.REQUIRED
-  )
-  public final Direction direction;
+  public final Double speed;
 
   /**
    * just a test boolean to play with
@@ -64,14 +51,13 @@ public final class MotorState extends AndroidMessage<MotorState, MotorState.Buil
   )
   public final Boolean test;
 
-  public MotorState(Integer speed, Direction direction, Boolean test) {
-    this(speed, direction, test, ByteString.EMPTY);
+  public MotorState(Double speed, Boolean test) {
+    this(speed, test, ByteString.EMPTY);
   }
 
-  public MotorState(Integer speed, Direction direction, Boolean test, ByteString unknownFields) {
+  public MotorState(Double speed, Boolean test, ByteString unknownFields) {
     super(ADAPTER, unknownFields);
     this.speed = speed;
-    this.direction = direction;
     this.test = test;
   }
 
@@ -79,7 +65,6 @@ public final class MotorState extends AndroidMessage<MotorState, MotorState.Buil
   public Builder newBuilder() {
     Builder builder = new Builder();
     builder.speed = speed;
-    builder.direction = direction;
     builder.test = test;
     builder.addUnknownFields(unknownFields());
     return builder;
@@ -92,7 +77,6 @@ public final class MotorState extends AndroidMessage<MotorState, MotorState.Buil
     MotorState o = (MotorState) other;
     return unknownFields().equals(o.unknownFields())
         && speed.equals(o.speed)
-        && direction.equals(o.direction)
         && test.equals(o.test);
   }
 
@@ -102,7 +86,6 @@ public final class MotorState extends AndroidMessage<MotorState, MotorState.Buil
     if (result == 0) {
       result = unknownFields().hashCode();
       result = result * 37 + speed.hashCode();
-      result = result * 37 + direction.hashCode();
       result = result * 37 + test.hashCode();
       super.hashCode = result;
     }
@@ -113,15 +96,12 @@ public final class MotorState extends AndroidMessage<MotorState, MotorState.Buil
   public String toString() {
     StringBuilder builder = new StringBuilder();
     builder.append(", speed=").append(speed);
-    builder.append(", direction=").append(direction);
     builder.append(", test=").append(test);
     return builder.replace(0, 2, "MotorState{").append('}').toString();
   }
 
   public static final class Builder extends Message.Builder<MotorState, Builder> {
-    public Integer speed;
-
-    public Direction direction;
+    public Double speed;
 
     public Boolean test;
 
@@ -129,18 +109,10 @@ public final class MotorState extends AndroidMessage<MotorState, MotorState.Buil
     }
 
     /**
-     * Speed of the motor (0-255)
+     * Speed of the motor (-100 to 100), negative will be reverse
      */
-    public Builder speed(Integer speed) {
+    public Builder speed(Double speed) {
       this.speed = speed;
-      return this;
-    }
-
-    /**
-     * Direction of the motor
-     */
-    public Builder direction(Direction direction) {
-      this.direction = direction;
       return this;
     }
 
@@ -155,43 +127,11 @@ public final class MotorState extends AndroidMessage<MotorState, MotorState.Buil
     @Override
     public MotorState build() {
       if (speed == null
-          || direction == null
           || test == null) {
         throw Internal.missingRequiredFields(speed, "speed",
-            direction, "direction",
             test, "test");
       }
-      return new MotorState(speed, direction, test, super.buildUnknownFields());
-    }
-  }
-
-  public enum Direction implements WireEnum {
-    FORWARD(0),
-
-    BACKWARD(1);
-
-    public static final ProtoAdapter<Direction> ADAPTER = ProtoAdapter.newEnumAdapter(Direction.class);
-
-    private final int value;
-
-    Direction(int value) {
-      this.value = value;
-    }
-
-    /**
-     * Return the constant for {@code value} or null.
-     */
-    public static Direction fromValue(int value) {
-      switch (value) {
-        case 0: return FORWARD;
-        case 1: return BACKWARD;
-        default: return null;
-      }
-    }
-
-    @Override
-    public int getValue() {
-      return value;
+      return new MotorState(speed, test, super.buildUnknownFields());
     }
   }
 
@@ -202,16 +142,14 @@ public final class MotorState extends AndroidMessage<MotorState, MotorState.Buil
 
     @Override
     public int encodedSize(MotorState value) {
-      return ProtoAdapter.INT32.encodedSizeWithTag(1, value.speed)
-          + Direction.ADAPTER.encodedSizeWithTag(2, value.direction)
+      return ProtoAdapter.DOUBLE.encodedSizeWithTag(1, value.speed)
           + ProtoAdapter.BOOL.encodedSizeWithTag(3, value.test)
           + value.unknownFields().size();
     }
 
     @Override
     public void encode(ProtoWriter writer, MotorState value) throws IOException {
-      ProtoAdapter.INT32.encodeWithTag(writer, 1, value.speed);
-      Direction.ADAPTER.encodeWithTag(writer, 2, value.direction);
+      ProtoAdapter.DOUBLE.encodeWithTag(writer, 1, value.speed);
       ProtoAdapter.BOOL.encodeWithTag(writer, 3, value.test);
       writer.writeBytes(value.unknownFields());
     }
@@ -222,15 +160,7 @@ public final class MotorState extends AndroidMessage<MotorState, MotorState.Buil
       long token = reader.beginMessage();
       for (int tag; (tag = reader.nextTag()) != -1;) {
         switch (tag) {
-          case 1: builder.speed(ProtoAdapter.INT32.decode(reader)); break;
-          case 2: {
-            try {
-              builder.direction(Direction.ADAPTER.decode(reader));
-            } catch (ProtoAdapter.EnumConstantNotFoundException e) {
-              builder.addUnknownField(tag, FieldEncoding.VARINT, (long) e.value);
-            }
-            break;
-          }
+          case 1: builder.speed(ProtoAdapter.DOUBLE.decode(reader)); break;
           case 3: builder.test(ProtoAdapter.BOOL.decode(reader)); break;
           default: {
             FieldEncoding fieldEncoding = reader.peekFieldEncoding();

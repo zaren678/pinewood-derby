@@ -30,6 +30,7 @@ class ConnectViewModel @Inject constructor(private val mApplication: Application
     private var mBleClient: BleClient? = null
     private var mAddress: String? = null
     private var mMotorBleGattServiceClient: MotorBleGattServiceClient? = null
+    private var mMotorState: MotorState = MotorState(0.0, false)
 
     private val mMotorStateObserver = Observer<MotorState?> { t -> Timber.d("Motor State Changed: $t") }
 
@@ -40,6 +41,23 @@ class ConnectViewModel @Inject constructor(private val mApplication: Application
     @get:Bindable
     var errorText: String by bindable("", BR.errorText)
         private set
+
+    var test: Boolean = false
+        set(value) {
+            field = value
+            if (updateMotorState()) {
+                writeMotorState()
+            }
+        }
+
+    var speed: Int = 0
+        set(value) {
+            field = value
+            Timber.d("Update Speed: $value")
+            if (updateMotorState()) {
+                writeMotorState()
+            }
+        }
 
     private val mServiceConnection = object: ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -98,9 +116,17 @@ class ConnectViewModel @Inject constructor(private val mApplication: Application
                 })
     }
 
-    fun writeMotorState() {
-        val motorState = MotorState.Builder().test(true).speed(55).direction(MotorState.Direction.BACKWARD).build()
-        writeMotorState(motorState)
+    private fun updateMotorState(): Boolean {
+        val motorState = MotorState.Builder().speed(speed.toDouble()).test(test).build()
+        if (motorState != mMotorState) {
+            mMotorState = motorState
+            return true
+        }
+        return false
+    }
+
+    private fun writeMotorState() {
+        writeMotorState(mMotorState)
     }
 
     private fun writeMotorState(motorState:MotorState) {
@@ -119,11 +145,6 @@ class ConnectViewModel @Inject constructor(private val mApplication: Application
                     Timber.d("Motor state written: $state")
                 }
         )
-    }
-
-    fun setLight(b:Boolean) {
-        val motorState = MotorState.Builder().test(b).speed(55).direction(MotorState.Direction.BACKWARD).build()
-        writeMotorState(motorState)
     }
 
     override fun onCleared() {

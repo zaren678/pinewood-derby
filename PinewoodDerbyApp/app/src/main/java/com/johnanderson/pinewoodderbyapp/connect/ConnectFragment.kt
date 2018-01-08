@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import com.johnanderson.pinewoodderbyapp.R
 import com.johnanderson.pinewoodderbyapp.databinding.FragmentConnectBinding
 import dagger.android.support.DaggerFragment
+import io.github.controlwear.virtual.joystick.android.JoystickView
 import javax.inject.Inject
 
 class ConnectFragment : DaggerFragment() {
@@ -51,6 +52,13 @@ class ConnectFragment : DaggerFragment() {
         val binding: FragmentConnectBinding = DataBindingUtil.inflate(inflater, R.layout.fragment_connect, container, false)
 
         binding.viewModel = mViewModel
+        binding.joystick.setOnMoveListener({ angle: Int, strength: Int ->
+            var multiplier = 1
+            if (angle > 180) {
+                multiplier = -1
+            }
+            mViewModel.speed = multiplier*strength
+        }, 150)
         return binding.root
     }
 }

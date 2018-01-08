@@ -5,6 +5,7 @@ import android.bluetooth.*
 import android.content.Context
 import android.content.Intent
 import android.os.Binder
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import com.google.common.util.concurrent.ListenableFuture
@@ -13,7 +14,6 @@ import com.johnanderson.pinewoodderbyapp.ext.isNullOrEmpty
 import com.johnanderson.pinewoodderbyapp.guava.scheduledExecutorService
 import com.johnanderson.pinewoodderbyapp.guava.toListenableFuture
 import com.johnanderson.pinewoodderbybleshared.BleConstants
-import com.johnanderson.pinewoodderbybleshared.PinewoodDerbyBleConstants
 import timber.log.Timber
 import java.io.Closeable
 import java.lang.Exception
@@ -208,8 +208,13 @@ class BleClientService: Service(), Closeable, BleClient {
         // We want to directly connect to the device, so we are setting the autoConnect
         // parameter to false.
         Timber.d("Trying to create a new connection.")
-        mBluetoothGatt = device.connectGatt(this, false, mGattCallback)
-        mBluetoothGatt?.connect()
+        mBluetoothGatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            device.connectGatt(this, false, mGattCallback, BluetoothDevice.TRANSPORT_LE)
+        } else {
+            device.connectGatt(this, false, mGattCallback)
+        }
+	    val connect = mBluetoothGatt?.connect()
+        Timber.d("Started connecting: $connect")
         mBluetoothDeviceAddress = address
         mConnectionState = ConnectedState.STATE_CONNECTING
         return true

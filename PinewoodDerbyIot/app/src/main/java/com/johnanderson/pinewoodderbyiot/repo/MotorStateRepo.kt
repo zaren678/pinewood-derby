@@ -8,7 +8,7 @@ import javax.inject.Singleton
 class MotorStateRepo @Inject constructor() {
 
     private val mListeners:MutableList<()->Unit> = ArrayList()
-    private var mMotorState:MotorState = MotorState(0, MotorState.Direction.FORWARD, false)
+    private var mMotorState:MotorState = MotorState(0.0, false)
 
     fun getMotorState(): MotorState {
         synchronized(mMotorState) {

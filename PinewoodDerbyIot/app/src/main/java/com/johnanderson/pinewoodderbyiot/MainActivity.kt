@@ -1,9 +1,7 @@
 package com.johnanderson.pinewoodderbyiot
 
-import android.app.Activity
 import android.os.Bundle
 import com.google.android.things.pio.PeripheralManagerService
-import com.johnanderson.pinewoodderbyiot.bluetooth.BleServer
 import com.johnanderson.pinewoodderbyiot.bluetooth.MotorBleServer
 import com.johnanderson.pinewoodderbyiot.peripheral.MotorPeripheral
 import dagger.android.support.DaggerAppCompatActivity
@@ -38,7 +36,10 @@ class MainActivity : DaggerAppCompatActivity() {
         super.onCreate(savedInstanceState)
         mBleServer.startAdvertising()
         mBleServer.startServer()
-        PeripheralManagerService()
+
+        mBleServer.setDisconnectListener {
+            mMotorPeripheral.stopMotor()
+        }
     }
 
     override fun onDestroy() {
